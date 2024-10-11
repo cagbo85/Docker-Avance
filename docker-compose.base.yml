@@ -1,0 +1,49 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:80"
+    networks:
+      - frontend-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    depends_on:
+      - database
+      - cache
+    networks:
+      - backend-network
+
+  database:
+    image: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password  # Utilisation du secret pour le mot de passe
+    secrets:
+      - db_password
+    networks:
+      - backend-network
+
+  cache:
+    image: redis
+    networks:
+      - backend-network
+
+secrets:
+  db_password:
+    file: ./db_password.txt
+
+volumes:
+  db-data:
+
+networks:
+  frontend-network:
+  backend-network:
